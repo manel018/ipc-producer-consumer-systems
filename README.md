@@ -93,16 +93,12 @@ Example:
 
 ```
 ├── README.md                      # This file
-├── project-description.md         # Original project specification
-├── part1/
-│   ├── producer.c                 # Part 1 producer implementation
-│   └── consumer.c                 # Part 1 consumer implementation
-├── part2/
-│   ├── producer_consumer.c        # Part 2 implementation
-│   └── analysis/
-│       ├── performance_times.csv   # Execution times for all combinations
-│       ├── graphs/                 # Generated graphs
-│       └── report/                 # Final report
+├── part1.c                        # Pipes implementation
+├── part2.c                        # Semaphores implementation 
+├── analysis/
+│   ├── performance_times.csv   # Execution times for all combinations
+│   ├── graphs/                 # Generated graphs
+│   └── report/                 # Final report
 └── Makefile
 ```
 
