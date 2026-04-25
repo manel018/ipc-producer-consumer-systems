@@ -93,13 +93,17 @@ Example:
 
 ```
 ├── README.md                      # This file
+├── .gitignore   
+├── analysis/                      # Folder created when running Part 2 experiments
+│   └── part2/
+│       ├── data/
+│       │   ├── execution_times.csv   # Execution times for all combinations
+│       │   └── occupancy_*.txt       # Buffer occupancy traces
+│       └── plots/                    # Generated graphs                  
+├── Makefile                       
 ├── part1.c                        # Pipes implementation
-├── part2.c                        # Semaphores implementation 
-├── analysis/
-│   ├── performance_times.csv   # Execution times for all combinations
-│   ├── graphs/                 # Generated graphs
-│   └── report/                 # Final report
-└── Makefile
+├── part2-analysis.py              # Script for generating plots from Part 2 data
+└── part2.c                        # Semaphores implementation
 ```
 
 ## Building
@@ -126,6 +130,7 @@ make run-part2    # Run Part 2 experiments
 - Part 2 emphasizes thread synchronization and shared memory coordination
 - Both parts include primality checking as the computational workload
 - Proper handling of fixed-size messages is critical in Part 1
+- Part 2 writes all experiment outputs under `analysis/part2/`
 
 ---
 
