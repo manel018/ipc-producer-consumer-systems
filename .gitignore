@@ -1,0 +1,38 @@
+# Executáveis e objetos
+*.o
+*.out
+*.exe
+*.a
+*.so
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Compilação
+build/
+dist/
+*.dSYM/
+__pycache__/
+
+# Logs
+*.log
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Dependências
+node_modules/
+venv/
+env/
+
+# Arquivos temporários
+*.tmp
+*.bak
+
+# Análise e gráficos
+analysis/
