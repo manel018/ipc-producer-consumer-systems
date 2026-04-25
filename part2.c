@@ -52,6 +52,70 @@ typedef struct {
 pthread_mutex_t print_mutex = PTHREAD_MUTEX_INITIALIZER;
 int running = 1;
 
+typedef struct {
+    long long total;
+    long long current;
+    int last_percent;
+    int current_n;
+    int active;
+} ProgressState;
+
+static pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
+static ProgressState progress_state = {0, 0, -1, 0, 0};
+
+static void progress_init_for_n(int n, long long total_items) {
+    pthread_mutex_lock(&progress_mutex);
+    progress_state.total = total_items;
+    progress_state.current = 0;
+    progress_state.last_percent = -1;
+    progress_state.current_n = n;
+    progress_state.active = 1;
+    pthread_mutex_unlock(&progress_mutex);
+}
+
+static void progress_add(long long delta) {
+    const int bar_width = 40;
+
+    pthread_mutex_lock(&progress_mutex);
+    if (!progress_state.active || progress_state.total <= 0) {
+        pthread_mutex_unlock(&progress_mutex);
+        return;
+    }
+
+    progress_state.current += delta;
+    if (progress_state.current > progress_state.total) {
+        progress_state.current = progress_state.total;
+    }
+
+    int percent = (int)((progress_state.current * 100) / progress_state.total);
+    if (percent != progress_state.last_percent || progress_state.current == progress_state.total) {
+        int filled = (percent * bar_width) / 100;
+        printf("\rN=%d [", progress_state.current_n);
+        for (int i = 0; i < bar_width; i++) {
+            putchar(i < filled ? '#' : '-');
+        }
+        printf("] %3d%% (%lld/%lld)", percent, progress_state.current, progress_state.total);
+        fflush(stdout);
+        progress_state.last_percent = percent;
+    }
+
+    pthread_mutex_unlock(&progress_mutex);
+}
+
+static void progress_finish_for_n(void) {
+    pthread_mutex_lock(&progress_mutex);
+    if (progress_state.active) {
+        progress_state.current = progress_state.total;
+        pthread_mutex_unlock(&progress_mutex);
+        progress_add(0);
+        pthread_mutex_lock(&progress_mutex);
+        putchar('\n');
+        fflush(stdout);
+        progress_state.active = 0;
+    }
+    pthread_mutex_unlock(&progress_mutex);
+}
+
 static void ensure_directory(const char* path) {
     if (mkdir(path, 0777) != 0 && errno != EEXIST) {
         perror(path);
@@ -89,11 +153,6 @@ void record_occupancy(SharedBuffer* shared) {
 void* producer(void* arg) {
     ThreadArgs* args = (ThreadArgs*)arg;
     SharedBuffer* shared = args->shared;
-    int id = args->thread_id;
-    int run_id = args->run_id;
-    int buffer_size = args->buffer_size;
-    int num_producers = args->num_producers;
-    int num_consumers = args->num_consumers;
     int* total_produced = args->total_produced;
     sem_t* mutex = args->mutex;
     sem_t* empty = args->empty;
@@ -132,13 +191,6 @@ void* producer(void* arg) {
         shared->count++;
         (*total_produced)++;
 
-        // Usar mutex para print (opcional, para não misturar saídas)
-          pthread_mutex_lock(&print_mutex);
-          printf("[RUN %02d]  [N=%4d P=%2d C=%2d]\t[PROD %02d]  t_pro[%6d]\tcount[%4d]\tvalor[%8d]\n",
-             run_id + 1, buffer_size, num_producers, num_consumers, id,
-             *total_produced, shared->count, number);
-        pthread_mutex_unlock(&print_mutex);
-        
         // Registrar ocupação
         record_occupancy(shared);
         
@@ -159,11 +211,6 @@ void* producer(void* arg) {
 void* consumer(void* arg) {
     ThreadArgs* args = (ThreadArgs*)arg;
     SharedBuffer* shared = args->shared;
-    int id = args->thread_id;
-    int run_id = args->run_id;
-    int buffer_size = args->buffer_size;
-    int num_producers = args->num_producers;
-    int num_consumers = args->num_consumers;
     int* total_consumed = args->total_consumed;
     sem_t* mutex = args->mutex;
     sem_t* empty = args->empty;
@@ -198,28 +245,23 @@ void* consumer(void* arg) {
         shared->out = (shared->out + 1) % shared->size;
         shared->count--;
         (*total_consumed)++;
-        int consumed_snapshot = *total_consumed;
-        int count_snapshot = shared->count;
         
         // Registrar ocupação
         record_occupancy(shared);
         
         // Sair da região crítica
         sem_post(mutex);
+
+        // Atualizar barra de progresso global do N atual.
+        progress_add(1);
         
         // Sinalizar que há um espaço vazio
         sem_post(empty);
         
-        // Verificar se o número é primo e imprimir
+        // Mantém o custo computacional do consumidor
         int prime = is_prime(number);
-        
-        // Usar mutex para print (opcional, para não misturar saídas)
-          pthread_mutex_lock(&print_mutex);
-          printf("[RUN %02d]  [N=%4d P=%2d C=%2d]\t[CONS %02d]  t_con[%6d]\tcount[%4d]\tvalor[%8d]\t-> %s\n",
-             run_id + 1, buffer_size, num_producers, num_consumers, id,
-             consumed_snapshot, count_snapshot, number,
-             prime ? "PRIMO" : "nao primo");
-        pthread_mutex_unlock(&print_mutex);
+
+        (void)prime;
     }
     
     return NULL;
@@ -339,7 +381,6 @@ double measure_time(int N, int Np, int Nc, int runs) {
         double time_taken = (end.tv_sec - start.tv_sec) + 
                             (end.tv_nsec - start.tv_nsec) / 1e9;
         total_time += time_taken;
-        printf("  Run %d: %.4f seconds\n", r + 1, time_taken);
     }
     
     return total_time / runs;
@@ -374,28 +415,25 @@ int main() {
     printf("Total de itens a processar: %d\n", M);
     printf("Número de execuções por configuração: %d\n\n", runs);
     
-    // Cabeçalho para tabela de resultados
-    printf("\n%-10s %-10s %-10s %-15s\n", "N", "Produtores", "Consumidores", "Tempo Médio (s)");
-    printf("------------------------------------------------\n");
-    
     // Para cada N
     for (int n_idx = 0; n_idx < 4; n_idx++) {
         int N = N_values[n_idx];
-        
+        long long total_items_for_n = (long long)num_combinations * runs * M;
+
         printf("\n=== N = %d ===\n", N);
+        progress_init_for_n(N, total_items_for_n);
         
         // Para cada combinação de threads
         for (int c = 0; c < num_combinations; c++) {
             int Np = combinations[c][0];
             int Nc = combinations[c][1];
-            
-            printf("\nConfiguração: Prod=%d, Cons=%d\n", Np, Nc);
+
             double avg_time = measure_time(N, Np, Nc, runs);
-            
-            printf("Tempo médio: %.4f segundos\n", avg_time);
-            printf("%-10d %-10d %-10d %-15.4f\n", N, Np, Nc, avg_time);
+
             fprintf(times_fp, "%d,%d,%d,%.9f\n", N, Np, Nc, avg_time);
         }
+
+        progress_finish_for_n();
     }
 
     fclose(times_fp);

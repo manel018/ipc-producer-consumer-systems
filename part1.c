@@ -66,7 +66,10 @@ void produtor(int write_fd, int quantidade) {
     
     // Enviar número 0 para sinalizar término
     snprintf(buffer, BUFFER_SIZE, "%019d", NUMERO_PARADA);
-    write(write_fd, buffer, BUFFER_SIZE);
+    if( write(write_fd, buffer, BUFFER_SIZE) == -1 ) {
+        perror("[Produtor] Erro ao escrever no pipe");
+        exit(1);
+    }
     printf("[Produtor] Enviado sinal de término (0)\n");
     
     close(write_fd);
