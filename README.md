@@ -1,121 +1,119 @@
-# IPC Producer-Consumer Systems
+# Sistemas IPC Produtor-Consumidor
 
-Project exploring Interprocess Communication (IPC) mechanisms and synchronization techniques through two producer-consumer implementations:
+Projeto que explora mecanismos de Comunicação entre Processos (IPC) e técnicas de sincronização por meio de duas implementações de produtor-consumidor:
 
-1. **Pipes-based Producer-Consumer**: Inter-process communication using anonymous pipes
-2. **Semaphore-based Producer-Consumer**: Multithreaded implementation with shared memory
+1. **Produtor-Consumidor com Pipes**: comunicação entre processos usando pipes anônimos
+2. **Produtor-Consumidor com Semáforos**: implementação multithread com memória compartilhada
 
 
-## Repository Structure
+## Estrutura do Repositório
 
 ```
 ├── .gitignore   
-├── Makefile                       # Build and run scripts    
-├── README.md                      # This file
-├── analysis/                      # Folder created when running Part 2 experiments
+├── Makefile                       # Scripts de build e execução    
+├── README.md                      # Este arquivo
+├── analysis/                      # Pasta criada ao executar os experimentos da Parte 2
 │   └── part2/
 │       ├── data/
-│       │   ├── execution_times.csv   # Execution times for all combinations
-│       │   └── occupancy_*.txt       # Buffer occupancy traces
-│       └── plots/                    # Generated graphs                  
-├── part1.c                        # Pipes implementation
-├── part2-analysis.py              # Script for generating plots from Part 2 data
-├── part2.c                        # Semaphores implementation
-└── requirements.txt               # Dependencies for the project
+│       │   ├── execution_times.csv   # Tempos de execução para todas as combinações
+│       │   └── occupancy_*.txt       # Traços de ocupação do buffer
+│       └── plots/                    # Gráficos gerados                  
+├── part1.c                        # Implementação com pipes
+├── part2-analysis.py              # Script para gerar gráficos a partir dos dados da Parte 2
+├── part2.c                        # Implementação com semáforos
+└── requirements.txt               # Dependências do projeto
 ```
 
-## Building
+## Compilação
 
 ```bash
-make              # Build all programs
+make              # Compila todos os programas
 ```
 
-## Running
-Run part 1 with a specified number of integers as an argument:
+## Execução
+Executa a parte 1 com um número específico de inteiros como argumento:
 
 ```bash
-./part1 <number_of_integers>    # Run Part 1
+./part1 <numero_de_inteiros>    # Executa a Parte 1
 
-# or using Makefile with an environment variable
+# ou usando o Makefile com uma variável do número de inteiros a processar
 
-make run-part1 NUM=1000          # Run Part 1 with 1000 integers
+make run-part1 NUM=1000          # Executa a Parte 1 com 1000 inteiros, por exemplo
 ```
 
-Run part 2 to execute all experiments and generate data:
+Executar a parte 2 para rodar todos os experimentos e gerar os dados:
 
 ```bash
-./part2                     # Run Part 2 experiments
+./part2                     # Executa os experimentos da Parte 2
 
-# or using Makefile
+# ou usando o Makefile
 
-make run-part2              # Run Part 2 experiments
+make run-part2              # Executa os experimentos da Parte 2
 ```
 
-This will execute all combinations of producer/consumer threads and buffer sizes, writing the results to `analysis/part2/data/`.
+Isso executará todas as combinações de threads produtoras/consumidoras e tamanhos de buffer, gravando os resultados na pasta `analysis/part2/data/`.
 
-Then, generate plots from the Part 2 data:
+Depois, gere os gráficos a partir dos dados da Parte 2:
 
 ```bash
-make analyze      # Generate plots from Part 2 data in 'analysis/part2/plots/'
+make analyze      # Gera gráficos de análise na pasta 'analysis/part2/plots/'
 ```
 
-🔎  Open the generated plots in **`analysis/part2/plots/`** and analyze the results.
+🔎  Abra os gráficos gerados em **`analysis/part2/plots/`** e analise os resultados.
 
-Finally, you can clean up compiled binaries and analysis data/plots:
+Por fim, você pode limpar os binários compilados e os dados/gráficos de análise:
 
 ```bash
-make clean        # Remove only compiled binaries
-make clean-all    # Remove binaries and all analysis data and plots
+make clean        # Remove apenas os binários compilados
+make clean-all    # Remove binários e todos os dados/gráficos de análise
 ```
 
 
-## Part 1: Pipes-based Producer-Consumer
+## Parte 1: Produtor-Consumidor com Pipes
 
-### Overview
+Implementação com dois processos na qual produtor e consumidor se comunicam por pipes anônimos. O produtor gera sequências de inteiros que o consumidor valida quanto à primalidade.
 
-A two-process implementation where a producer and consumer communicate through anonymous pipes. The producer generates integer sequences that the consumer validates for primality.
+⚠️ Este programa recebe um argumento de linha de comando que especifica quantos inteiros produzir/consumir, permitindo testes flexíveis
 
-This program receives a command-line argument specifying how many integers to produce/consume, allowing for flexible testing
+### Principais Detalhes de Implementação
 
-### Key Implementation Details
-
-- Both processes (parent and child) access both ends of the pipe after `fork()`
-- **Critical**: Numbers are converted to fixed-size strings (20 bytes) before writing to the pipe
-- Fixed-size I/O prevents message fragmentation and ensures reliable communication
+- Ambos os processos (pai e filho) acessam as duas extremidades do pipe após o `fork()`
+- **Crítico**: os números são convertidos para strings de tamanho fixo (20 bytes) antes de serem escritos no pipe
+- E/S de tamanho fixo evita fragmentação de mensagens e garante comunicação confiável
 
 
-## Part 2: Semaphore-based Producer-Consumer
+## Parte 2: Produtor-Consumidor com Semáforos
 
-### Overview
+Uma implementação multithread que usa memória compartilhada e semáforos para sincronização entre múltiplas threads produtoras e consumidoras.
 
-A multithreaded implementation using shared memory and semaphores for synchronization between multiple producer and consumer threads.
+Este programa é composto por duas partes: 
+1. lógica principal em `part2.c` 
+2. análise/plotagem em `part2-analysis.py`. 
 
-This program consists of two parts: the main logic in `part2.c` and the analysis/plotting in `part2-analysis.py`. The main program runs experiments with various configurations of producers, consumers, and buffer sizes, while the analysis script generates visualizations from the collected data.
+O programa principal executa experimentos com várias configurações de produtores, consumidores e tamanhos de buffer, enquanto o script python  de análise gera visualizações a partir dos dados coletados.
 
-### Architecture
+### Arquitetura
 
-- **Shared Memory**: Vector of N integer slots
-- **Producers** ($Np$ threads): Generate random integers (1 to $10^7$) and write to empty slots
-- **Consumers** ($Nc$ threads): Read integers from filled slots and check primality
+- **Memória Compartilhada**: vetor com N posições inteiras
+- **Produtores** (threads $Np$): geram inteiros aleatórios (1 a $10^7$) e escrevem em posições vazias
+- **Consumidores** (threads $Nc$): leem inteiros de posições preenchidas e verificam primalidade
 
-### Synchronization
+### Sincronização
 
-- **Mutex Semaphore**: Protects shared memory access (prevents race conditions)
-- **Counter Semaphores**: Coordinate full/empty buffer conditions
-  - Producers wait when buffer is full
-  - Consumers wait when buffer is empty
+- **Semáforo Mutex**: protege o acesso à memória compartilhada (evita condições de corrida)
+- **Semáforos Contadores**: coordenam as condições de buffer cheio/vazio
+  - Produtores esperam quando o buffer está cheio
+  - Consumidores esperam quando o buffer está vazio
 
-### Study Case Parameters
+### Parâmetros do Estudo de Caso
 
-**Target**: Process $M = 10^5$ numbers before termination
+- **Objetivo**: processar $M = 10^5$ números antes da finalização
+- **Tamanhos de buffer**: $N \in \{1, 10, 100, 1000\}$
+- **Combinações de threads**: $(Np, Nc) \in \{(1,1), (1,2), (1,4), (1,8), (2,1), (4,1), (8,1)\}$
 
-**Buffer sizes**: $N \in \{1, 10, 100, 1000\}$
+### Análise e Gráficos
 
-**Thread combinations**: $(Np, Nc) \in \{(1,1), (1,2), (1,4), (1,8), (2,1), (4,1), (8,1)\}$
-
-### Analysis and Plots
-
-- **Execution Time**: Total time to process $M$ numbers for each configuration
-- **Buffer Occupancy**: Time series of buffer occupancy during execution
-- **Heatmaps**: Average buffer occupancy across configurations for each $N$
+- **Tempo de Execução**: tempo total para processar $M$ números em cada configuração
+- **Ocupação do Buffer**: série temporal da ocupação do buffer durante a execução
+- **Mapas de Calor**: ocupação média do buffer entre configurações para cada $N$
 
