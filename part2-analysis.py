@@ -181,19 +181,20 @@ def plot_execution_times():
         mpe.Normal(),
     ])
     
-    ax.set_xlabel('Configuração (Produtores x Consumidores)')
-    ax.set_ylabel('Tempo Médio de Execução (segundos)')
+    ax.set_xlabel('Configuração (Produtores x Consumidores)', fontsize=20)
+    ax.set_ylabel('Tempo Médio de Execução (segundos)', fontsize=20)
     ax.set_title('Tempo de Execução vs Configuração de Threads\n(Produtor-Consumidor com Semáforos)')
     ax.set_xticks(x)
+    ax.tick_params(axis='x', labelsize=16)
+    ax.tick_params(axis='y', labelsize=16)
     ax.set_xticklabels(config_labels)
-    ax.legend()
+    ax.legend(fontsize=12)
     ax.grid(True, alpha=0.3, zorder=0)
     
     fig.tight_layout()
     output_file = plot_output_path('execution_times.png')
     fig.savefig(output_file, dpi=150)
     print(f"Gráfico salvo em: {output_file}")
-    plt.show()
 
 
 def plot_buffer_occupancy_improved():
@@ -210,7 +211,7 @@ def plot_buffer_occupancy_improved():
         N, _, _ = parse_occupancy_filename(f)
         files_by_N[N].append(f)
     
-    # Esquema térmico já usado nas demais funções do arquivo
+    # Esquema térmico
     config_color, _ = get_config_color_scheme()
     ordered_configs = [(1,8), (1,4), (1,2), (1,1), (2,1), (4,1), (8,1)]
 
@@ -265,22 +266,19 @@ def plot_buffer_occupancy_improved():
                     linewidth=1.2,
                 )
         
-        plt.xlabel('Número da Operação (produção/consumo)', fontsize=12)
-        plt.ylabel('Ocupação do Buffer', fontsize=12)
+        plt.xlabel('Número da Operação (produção/consumo)', fontsize=20)
+        plt.ylabel('Ocupação do Buffer', fontsize=20)
+        plt.xticks(fontsize=16)
+        plt.yticks(fontsize=16)
         plt.title(f'Ocupação do Buffer ao Longo do Tempo (N = {N})', fontsize=14, fontweight='bold')
-        plt.legend(loc='upper right', fontsize=10)
+        plt.legend(loc='center right', fontsize=22)
         plt.grid(True, alpha=0.3)
         plt.ylim(-0.5, N + 0.5)
         
-        # Ajustar limite do eixo X para foco nas operações iniciais (opcional)
-        # plt.xlim(0, min(len(occupancies) if occupancies else 0, 20000))
-        
         plt.tight_layout()
         plt.savefig(plot_output_path(f'buffer_occupancy_N{N}_individual.png'), dpi=150, bbox_inches='tight')
-        plt.show()
     
     print("\n✓ Gráficos gerados:")
-    print("  - buffer_occupancy_consolidado.png (todos N em um único gráfico)")
     for N in files_by_N.keys():
         print(f"  - buffer_occupancy_N{N}_individual.png")
 
@@ -299,7 +297,7 @@ def plot_detail_by_n_ranges():
         100: [(30000, 'buffer_occupancy_detail_N100.png', 'Detalhe da ocupação do buffer (N=100, 0 a 30000)')],
         1000: [
             (200, 'buffer_occupancy_detail_N1000_0_200.png', 'Ultra-detalhe da ocupação do buffer (N=1000, 0 a 200)'),
-            (10000, 'buffer_occupancy_detail_N1000_0_5000.png', 'Detalhe da ocupação do buffer (N=1000, 0 a 5000)')
+            (10000, 'buffer_occupancy_detail_N1000_0_10000.png', 'Detalhe da ocupação do buffer (N=1000, 0 a 10000)')
         ],
     }
 
@@ -313,7 +311,7 @@ def plot_detail_by_n_ranges():
         print("Nenhum buffer alvo encontrado.")
         return
 
-    # Usar o mesmo esquema de cores térmicas dos gráficos individuais.
+    # Usar esquema de cores térmicas dos gráficos individuais.
     config_color, _ = get_config_color_scheme()
     ordered_configs = [(1,8), (1,4), (1,2), (1,1), (2,1), (4,1), (8,1)]
 
@@ -380,7 +378,6 @@ def plot_detail_by_n_ranges():
             output_file = plot_output_path(filename)
             fig.savefig(output_file, dpi=150, bbox_inches='tight')
             print(f"Gráfico salvo em: {output_file}")
-            plt.show()
             plt.close(fig)
 
 def plot_occupancy_heatmap_2d_by_N():
@@ -448,17 +445,19 @@ def plot_occupancy_heatmap_2d_by_N():
             
             ax.set_yticks(range(len(config_labels)))
             ax.set_yticklabels(config_labels)
-            ax.set_xlabel('Janela de Tempo (progressão da execução)', fontsize=11)
-            ax.set_ylabel('Configuração (Produtores x Consumidores)', fontsize=11)
+            ax.tick_params(axis='x', labelsize=16)
+            ax.tick_params(axis='y', labelsize=16)
+            ax.set_xlabel('Janela de Tempo (progressão da execução)', fontsize=20)
+            ax.set_ylabel('Configuração (Produtores x Consumidores)', fontsize=20)
             ax.set_title(f'Ocupação do Buffer ao Longo do Tempo - N = {N}', fontsize=13, fontweight='bold')
             
             # Colorbar
             cbar = plt.colorbar(im, ax=ax)
-            cbar.set_label('Ocupação Média do Buffer', fontsize=10)
+            cbar.set_label('Ocupação Média do Buffer', fontsize=20)
+            cbar.ax.tick_params(labelsize=16)
             
             plt.tight_layout()
             plt.savefig(plot_output_path(f'occupancy_heatmap_N{N}.png'), dpi=150, bbox_inches='tight')
-            plt.show()
 
 
 def get_config_color(P, C, colormap='coolwarm'):
@@ -495,17 +494,6 @@ def get_config_color_scheme():
         color, ratio = get_config_color(P, C, 'coolwarm')
         config_colors[(P, C)] = color
         config_ratios[(P, C)] = ratio
-        
-        # Debug: imprimir cores atribuídas
-        ratio_desc = f"P/C = {P}/{C} = {P/C:.2f}"
-        if P < C:
-            dom = f"🔥 Consumidor-dominante (log2={ratio:.2f})"
-        elif P > C:
-            dom = f"❄️ Produtor-dominante (log2={ratio:.2f})"
-        else:
-            dom = f"⚖️ Equilibrado (log2={ratio:.2f})"
-        
-        print(f"  P={P}, C={C}: {dom} -> cor {color[:3]}")
     
     return config_colors, config_ratios
 
@@ -515,7 +503,8 @@ if __name__ == "__main__":
     ensure_output_directories()
     
     # Gerar gráficos
-    print("\n1. Gerando gráfico de tempos de execução...")
+    print("\n1. Gerando os gráficos estáticos...")
+
     plot_execution_times()
     
     plot_buffer_occupancy_improved()
@@ -525,3 +514,4 @@ if __name__ == "__main__":
     plot_occupancy_heatmap_2d_by_N()
     
     print("\n=== ANÁLISE CONCLUÍDA ===")
+    print(f"Gráficos salvos na pasta: {BASE_OUTPUT_DIR}")

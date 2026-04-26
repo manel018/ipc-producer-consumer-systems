@@ -37,11 +37,12 @@ clean-part1:
 clean-part2:
 	rm -f $(TARGET_PART2)
 
-clean-all: clean clean-data clean-plots
+clean-all: clean
+	rm -rf analysis/
 
 # Execução da Parte 1
 run-part1: $(TARGET_PART1)
-	./$(TARGET_PART1) 20
+	./$(TARGET_PART1) $${NUM:-20}
 
 # Execução da Parte 2
 run-part2: $(TARGET_PART2)

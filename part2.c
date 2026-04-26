@@ -439,7 +439,7 @@ int main() {
     fclose(times_fp);
     
     printf("\n=== EXPERIMENTO CONCLUÍDO ===\n");
-    printf("Arquivos de ocupação gerados para cada configuração.\n");
+    printf("Arquivos de ocupação gerados na pasta %s.\n", OUTPUT_DATA_DIR);
     
     return 0;
 }

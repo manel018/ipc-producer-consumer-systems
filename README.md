@@ -1,13 +1,72 @@
 # IPC Producer-Consumer Systems
 
-A distributed systems course project exploring Interprocess Communication (IPC) mechanisms through two producer-consumer implementations.
-
-## Project Overview
-
-This project implements producer-consumer patterns using different IPC mechanisms and synchronization techniques:
+Project exploring Interprocess Communication (IPC) mechanisms and synchronization techniques through two producer-consumer implementations:
 
 1. **Pipes-based Producer-Consumer**: Inter-process communication using anonymous pipes
 2. **Semaphore-based Producer-Consumer**: Multithreaded implementation with shared memory
+
+
+## Repository Structure
+
+```
+├── .gitignore   
+├── Makefile                       # Build and run scripts    
+├── README.md                      # This file
+├── analysis/                      # Folder created when running Part 2 experiments
+│   └── part2/
+│       ├── data/
+│       │   ├── execution_times.csv   # Execution times for all combinations
+│       │   └── occupancy_*.txt       # Buffer occupancy traces
+│       └── plots/                    # Generated graphs                  
+├── part1.c                        # Pipes implementation
+├── part2-analysis.py              # Script for generating plots from Part 2 data
+├── part2.c                        # Semaphores implementation
+└── requirements.txt               # Dependencies for the project
+```
+
+## Building
+
+```bash
+make              # Build all programs
+```
+
+## Running
+Run part 1 with a specified number of integers as an argument:
+
+```bash
+./part1 <number_of_integers>    # Run Part 1
+
+# or using Makefile with an environment variable
+
+make run-part1 NUM=1000          # Run Part 1 with 1000 integers
+```
+
+Run part 2 to execute all experiments and generate data:
+
+```bash
+./part2                     # Run Part 2 experiments
+
+# or using Makefile
+
+make run-part2              # Run Part 2 experiments
+```
+
+This will execute all combinations of producer/consumer threads and buffer sizes, writing the results to `analysis/part2/data/`.
+
+Then, generate plots from the Part 2 data:
+
+```bash
+make analyze      # Generate plots from Part 2 data in 'analysis/part2/plots/'
+```
+
+🔎  Open the generated plots in **`analysis/part2/plots/`** and analyze the results.
+
+Finally, you can clean up compiled binaries and analysis data/plots:
+
+```bash
+make clean        # Remove only compiled binaries
+make clean-all    # Remove binaries and all analysis data and plots
+```
 
 
 ## Part 1: Pipes-based Producer-Consumer
@@ -16,46 +75,22 @@ This project implements producer-consumer patterns using different IPC mechanism
 
 A two-process implementation where a producer and consumer communicate through anonymous pipes. The producer generates integer sequences that the consumer validates for primality.
 
-### Producer Behavior
+This program receives a command-line argument specifying how many integers to produce/consume, allowing for flexible testing
 
-Generates growing sequences of random integers according to:
-
-$$N_i = N_{i-1} + \Delta,\; N_0 = 1,\; \Delta \in [1,100]$$
-
-Where:
-- $N_0 = 1$ (initial value)
-- $\Delta$ is a random integer between 1 and 100 (inclusive)
-- The producer generates a configurable number of integers
-
-### Consumer Behavior
-
-- Receives integers from the producer via pipe
-- Checks if each integer is a prime number
-- Prints results to the terminal
-- Terminates upon receiving 0
-
-### Implementation Notes
+### Key Implementation Details
 
 - Both processes (parent and child) access both ends of the pipe after `fork()`
 - **Critical**: Numbers are converted to fixed-size strings (20 bytes) before writing to the pipe
 - Fixed-size I/O prevents message fragmentation and ensures reliable communication
 
-### Usage
-
-```bash
-./producer-consumer <number_of_integers>
-```
-
-Example:
-```bash
-./producer-consumer 1000
-```
 
 ## Part 2: Semaphore-based Producer-Consumer
 
 ### Overview
 
 A multithreaded implementation using shared memory and semaphores for synchronization between multiple producer and consumer threads.
+
+This program consists of two parts: the main logic in `part2.c` and the analysis/plotting in `part2-analysis.py`. The main program runs experiments with various configurations of producers, consumers, and buffer sizes, while the analysis script generates visualizations from the collected data.
 
 ### Architecture
 
@@ -78,61 +113,9 @@ A multithreaded implementation using shared memory and semaphores for synchroniz
 
 **Thread combinations**: $(Np, Nc) \in \{(1,1), (1,2), (1,4), (1,8), (2,1), (4,1), (8,1)\}$
 
-### Usage
+### Analysis and Plots
 
-```bash
-./producer-consumer-semaphore <buffer_size> <num_producers> <num_consumers> <total_numbers>
-```
+- **Execution Time**: Total time to process $M$ numbers for each configuration
+- **Buffer Occupancy**: Time series of buffer occupancy during execution
+- **Heatmaps**: Average buffer occupancy across configurations for each $N$
 
-Example:
-```bash
-./producer-consumer-semaphore 100 2 4 100000
-```
-
-## Repository Structure
-
-```
-├── README.md                      # This file
-├── .gitignore   
-├── analysis/                      # Folder created when running Part 2 experiments
-│   └── part2/
-│       ├── data/
-│       │   ├── execution_times.csv   # Execution times for all combinations
-│       │   └── occupancy_*.txt       # Buffer occupancy traces
-│       └── plots/                    # Generated graphs                  
-├── Makefile                       
-├── part1.c                        # Pipes implementation
-├── part2-analysis.py              # Script for generating plots from Part 2 data
-└── part2.c                        # Semaphores implementation
-```
-
-## Building
-
-```bash
-make              # Build all programs
-make clean        # Remove compiled binaries
-make run-part1    # Run Part 1 tests
-make run-part2    # Run Part 2 experiments
-```
-
-## Key Concepts
-
-- **IPC**: Inter-process communication mechanisms
-- **Pipes**: Unnamed pipes for process communication
-- **Semaphores**: Synchronization primitives for thread coordination
-- **Race Conditions**: Concurrent access issues and mitigation strategies
-- **Producer-Consumer Pattern**: Classic synchronization problem
-- **Primality Testing**: Algorithmic verification of prime numbers
-
-## Notes
-
-- Part 1 focuses on process-based IPC with pipes
-- Part 2 emphasizes thread synchronization and shared memory coordination
-- Both parts include primality checking as the computational workload
-- Proper handling of fixed-size messages is critical in Part 1
-- Part 2 writes all experiment outputs under `analysis/part2/`
-
----
-
-**Status**: In development  
-**Last Updated**: April 2026
